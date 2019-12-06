@@ -126,7 +126,7 @@ public class DBProject {
         stmt.close();
         return rowCount;
     }// end executeQuery
- 
+
     /**
      * Method to close the physical connection if it is open.
      */
@@ -360,6 +360,20 @@ public class DBProject {
  
         return next;
     }
+    // returns the value of first row first column
+     public int testQuery(String query) throws SQLException {
+           
+            Statement stmt = this._connection.createStatement();
+            ResultSet rs = stmt.executeQuery(query);
+     
+            int value = 0;
+ 
+            if ( rs.next() ) {
+                value = rs.getInt(1);
+            }
+           
+            return value;
+     }// end testQuery
  
     public static void addCustomer(DBProject esql) {
         // Given customer details add the customer in the DB
@@ -402,18 +416,38 @@ public class DBProject {
     public static void addRoom(DBProject esql) {
         // Given room details add the room in the DB
         try {
-            System.out.print("\tEnter hotelID: ");
-            String hotelid = in.readLine();
- 
-            System.out.print("\tEnter room type: ");
-            String roomType = in.readLine();
- 
-            String sql = String.format("INSERT INTO Room VALUES ( %s, %s, '%s')", hotelid,
-                    esql.getNextId(esql, "roomno", "room"), roomType);
- 
-            esql.executeUpdate(sql);
-            System.out.println("The room was succesfully added!");
-        } catch (Exception e) {
+
+			int hotel = 0;
+
+			while (hotel == 0) {
+
+				System.out.print("\tEnter hotelID: ");
+	            String hotelid = in.readLine();
+	 
+	            System.out.print("\tEnter room type: ");
+	            String roomType = in.readLine();
+
+				String sql_res= "SELECT COUNT(*) FROM hotel WHERE hotelid = " + hotelid;
+				
+				hotel = esql.testQuery(sql_res);
+
+				if ( hotel > 0 ) {
+
+				   	String sql = String.format("INSERT INTO Room VALUES ( %s, %s, '%s')", hotelid,
+		           	esql.getNextId(esql, "roomno", "room"), roomType);
+		 
+		           	esql.executeUpdate(sql);
+		           	System.out.println("The room was succesfully added!");
+
+				}
+				else {
+					System.out.println("Invalid hotelid!\n");
+				}
+
+			} // end while
+               
+        }
+     	catch (Exception e) {
             System.err.println(e.getMessage());
         }
     }// end addRoom
@@ -455,30 +489,64 @@ public class DBProject {
     public static void addRepair(DBProject esql) {
         // Given repair details add repair in the DB
         try {
+
+ 			int hotel = 0;
+ 			int room = 0;
+ 			int comp = 0;
+
+ 			while (hotel == 0 && room == 0 && comp == 0) {
+
+ 				System.out.print("\tEnter hotelID: ");
+            	String hotelid = in.readLine();
+
+  				System.out.print("\tEnter room number: ");
+            	String roomNo = in.readLine();
  
-            System.out.print("\tEnter hotelID: ");
-            String hotelid = in.readLine();
+            	System.out.print("\tEnter maintenance company id: ");
+            	String compID = in.readLine();
  
-            System.out.print("\tEnter room number: ");
-            String roomNo = in.readLine();
+            	String sql_res1= String.format("SELECT COUNT(*) FROM hotel WHERE hotelid = '%s", hotelid);
+            	hotel = esql.testQuery(sql_res1);
+
+            	String sql_res2= String.format("SELECT COUNT(*) FROM room WHERE hotelid = '%s' AND roomno = '%s'", hotelid, roomNo);
+            	room = esql.testQuery(sql_res2);
+
+            	String sql_res3= String.format("SELECT COUNT(*) FROM maintenancecompany WHERE cmpID  = '%s", compID);
+            	comp = esql.testQuery(sql_res3);
+
+				if ( hotel > 0 && room > 0 && comp > 0) {
+
+		            System.out.print("\tEnter repair date: ");
+		            String repDate = in.readLine();
+		 
+		            System.out.print("\tEnter repair description: ");
+		            String repairDescr = in.readLine();
+		 
+		            System.out.print("\tEnter repair type: ");
+		            String repairType = in.readLine();
+		 
+		            String sql = String.format("INSERT INTO Repair VALUES ( %s, %s, %s, %s, '%s', '%s', '%s')",
+		                    esql.getNextId(esql, "rID", "Repair"), hotelid, roomNo, compID, repDate, repairDescr, repairType);
+		 
+		            esql.executeUpdate(sql);
+		            System.out.println("The repair was succesfully added!");
+
+				}
+				else if (hotel == 0) {
+					System.out.println("Invalid hotel id!\n");
+				}
+				else if (room == 0) {
+					System.out.println("Invalid room number!\n");
+				}
+				else {
+					System.out.println("Invalid maintenance company id!\n");
+				}
+
+ 			} // end while
+            
  
-            System.out.print("\tEnter maintenance company id: ");
-            String compID = in.readLine();
- 
-            System.out.print("\tEnter repair date: ");
-            String repDate = in.readLine();
- 
-            System.out.print("\tEnter repair description: ");
-            String repairDescr = in.readLine();
- 
-            System.out.print("\tEnter repair type: ");
-            String repairType = in.readLine();
- 
-            String sql = String.format("INSERT INTO Repair VALUES ( %s, %s, %s, %s, '%s', '%s', '%s')",
-                    esql.getNextId(esql, "rID", "Repair"), hotelid, roomNo, compID, repDate, repairDescr, repairType);
- 
-            esql.executeUpdate(sql);
-            System.out.println("The repair was succesfully added!");
+          
+            
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
@@ -529,20 +597,48 @@ public class DBProject {
     public static void assignHouseCleaningToRoom(DBProject esql) {
         // Given Staff SSN, HotelID, roomNo Assign the staff to the room
         try {
- 
-            System.out.print("\tEnter staff id: ");
-            String staffID = in.readLine();
- 
-            System.out.print("\tEnter hotelID: ");
-            String hotelid = in.readLine();
- 
-            System.out.print("\tEnter room number: ");
-            String roomNo = in.readLine();
- 
-            String sql = String.format("INSERT INTO Assigned VALUES ('%s','%s','%s','%s')",
+
+	 		int staff = 0;
+	 		int hotel = 0;
+	 		int room = 0;
+
+ 			while (staff == 0 && room == 0 && hotel == 0) {
+
+	            System.out.print("\tEnter staff id: ");
+	            String staffID = in.readLine();
+	 
+	            System.out.print("\tEnter hotelID: ");
+	            String hotelid = in.readLine();
+	 
+	            System.out.print("\tEnter room number: ");
+	            String roomNo = in.readLine();
+
+	            String sql_res = String.format("SELECT COUNT(*) FROM hotel WHERE hotelid = '%s", hotelid);
+            	hotel = esql.testQuery(sql_res);
+
+            	String sql_res2 = String.format("SELECT COUNT(*) FROM room WHERE hotelid = '%s' AND roomno = '%s'", hotelid, roomNo);
+            	room = esql.testQuery(sql_res2);
+
+            	String sql_res3 = String.format("SELECT COUNT(*) FROM staff WHERE ssn  = '%s", staffID);
+            	staff = esql.testQuery(sql_res3);
+
+            	if ( hotel > 0 && room > 0 && staff > 0) {
+            		 String sql = String.format("INSERT INTO Assigned VALUES ('%s','%s','%s','%s')",
                     esql.getNextId(esql, "asgID", "Assigned"), staffID, hotelid, roomNo);
  
-            esql.executeUpdate(sql);
+            		esql.executeUpdate(sql);
+            	}
+            	else if (hotel == 0) {
+					System.out.println("Invalid hotel id!\n");
+				}
+				else if (room == 0) {
+					System.out.println("Invalid room number!\n");
+				}
+				else {
+					System.out.println("Invalid staff if!\n");
+				}
+ 
+			} // end while
  
         } catch (Exception e) {
             System.err.println(e.getMessage());
@@ -582,14 +678,27 @@ public class DBProject {
     public static void numberOfAvailableRooms(DBProject esql) {
         // Given a hotelID, get the count of rooms available
         try {
-            System.out.print("\tEnter Hotel ID: ");
-            String hotelid = in.readLine();
- 
-            String query = String.format("SELECT COUNT(*) FROM Room R "
+
+        	int hotel = 0;
+
+        	while (hotel == 0) {
+			 	System.out.print("\tEnter Hotel ID: ");
+           		String hotelid = in.readLine();
+
+           		String sql_res= String.format("SELECT COUNT(*) FROM hotel WHERE hotelid = '%s", hotelid);
+            	hotel = esql.testQuery(sql_res);
+
+            	if (hotel > 0) {
+            		String query = String.format("SELECT COUNT(*) FROM Room R "
                     + "WHERE R.hotelid = '%s' and R.roomNo not in (SELECT roomNo FROM Booking B WHERE B.hotelid = '%s');",
                     hotelid, hotelid);
  
-            esql.executeQuery(query);
+            		esql.executeQuery(query);
+            	}
+            	else{
+            		System.out.println("Invalid hotel id!\n");
+            	}
+			} // end while
  
         } catch (Exception e) {
             System.err.println(e.getMessage());
@@ -615,25 +724,41 @@ public class DBProject {
         // Given a hotelID, date - list all the rooms available for a week(including the
         // input date)
         try {
- 
-            System.out.print("\tEnter hotelID: ");
-            String hotelid = in.readLine();
- 
-            System.out.print("\tEnter date(mm/dd/yyyy): ");
-            String date = in.readLine();
- 
-            Date date1 = new SimpleDateFormat("MM/dd/yyyy").parse(date);
-            Calendar c = Calendar.getInstance();
-            c.setTime(date1);
-            c.add(Calendar.DATE, 7);
-            DateFormat df = new SimpleDateFormat("MM/dd/yyyy");
-            String weeklater = df.format(c.getTime());
- 
-            String sql = String.format(
+ 			
+ 			int hotel = 0;
+
+        	while (hotel == 0) {
+
+		        System.out.print("\tEnter hotelID: ");
+		        String hotelid = in.readLine();
+		 
+		 		String sql_res= String.format("SELECT COUNT(*) FROM hotel WHERE hotelid = '%s", hotelid);
+            	hotel = esql.testQuery(sql_res);
+
+            	if (hotel > 0) {
+
+		            System.out.print("\tEnter date(mm/dd/yyyy): ");
+		            String date = in.readLine();
+		 
+		            Date date1 = new SimpleDateFormat("MM/dd/yyyy").parse(date);
+		            Calendar c = Calendar.getInstance();
+		            c.setTime(date1);
+		            c.add(Calendar.DATE, 7);
+		            DateFormat df = new SimpleDateFormat("MM/dd/yyyy");
+		            String weeklater = df.format(c.getTime());
+
+ 					String sql = String.format(
                     "SELECT * from Booking WHERE hotelid = '%s' and bookingdate BETWEEN '%s' AND '%s'", hotelid, date,
                     weeklater);
-            esql.executeQuery(sql);
-        } catch (Exception e) {
+            		esql.executeQuery(sql);
+ 				}
+ 				else{
+            		System.out.println("Invalid hotel id!\n");
+            	}
+            
+        	} // end while 
+    	}
+        catch (Exception e) {
             System.err.println(e.getMessage());
         }
     }// end listHotelRoomBookingsForAWeek
@@ -666,20 +791,33 @@ public class DBProject {
     public static void topKHighestPriceBookingsForACustomer(DBProject esql) {
         // Given a customer Name, List Top K highest booking price for a customer
         try {
- 
-            System.out.print("\tEnter customer's first name: ");
-            String fName = in.readLine();
-            System.out.print("\tEnter customer's last name: ");
-            String lName = in.readLine();
-            System.out.print("\tEnter k: ");
-            String k = in.readLine();
- 
-            String sql = String.format("SELECT B.price FROM Booking B, Customer C "
-                    + "WHERE C.customerid = B.customer AND C.fName = '%s' AND C.lName = '%s' "
-                    + "ORDER BY B.price DESC LIMIT %s; ", fName, lName, k);
- 
-            esql.executeQuery(sql);
- 
+
+        	int customer_c = 0;
+
+        	while (customer_c == 0)
+ 			{
+	            System.out.print("\tEnter customer's first name: ");
+	            String fName = in.readLine();
+	            System.out.print("\tEnter customer's last name: ");
+	            String lName = in.readLine();
+	            System.out.print("\tEnter k: ");
+	            String k = in.readLine();
+
+	            String sql_res = String.format("SELECT COUNT(*) FROM customer C WHERE C.fName = '%s' AND C.lName = '%s'", fName, lName);
+            	customer_c = esql.testQuery(sql_res);
+
+	 			if ( customer_c > 0) {
+
+		            String sql = String.format("SELECT B.price FROM Booking B, Customer C "
+		                    + "WHERE C.customerid = B.customer AND C.fName = '%s' AND C.lName = '%s' "
+		                    + "ORDER BY B.price DESC LIMIT %s; ", fName, lName, k);
+		 
+		            esql.executeQuery(sql);
+	        	}
+	        	else {
+					System.out.println("Invalid customer name!\n");
+	        	}
+ 			} // end while
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
@@ -731,17 +869,30 @@ public class DBProject {
         // Given a Maintenance company name list all the repairs along with repairType,
         // hotelID and roomNo
         try {
+
+        	int maintC = 0; 
             String mcomp = "";
- 
-            System.out.print("\tEnter Maintenance company name: ");
-            mcomp = in.readLine();
- 
-            String sql = String
+ 			
+ 			while(maintC == 0) {
+
+ 				System.out.print("\tEnter Maintenance company name: ");
+            	mcomp = in.readLine();
+
+            	String sql_res = String.format("SELECT COUNT(*) FROM maintenancecompany WHERE name = '%s'", mcomp);
+            	maintC = esql.testQuery(sql_res);
+
+            	if (maintC > 0) {
+            		String sql = String
                     .format("SELECT r.rid, r.hotelid, r.roomNo, r.repairType FROM maintenancecompany mc, repair r "
                             + "WHERE mc.name = '%s' AND mc.cmpid = r.mcompany;", mcomp);
  
-            esql.executeQuery(sql);
- 
+           			esql.executeQuery(sql);
+            	}
+            	else {
+            		System.out.println("Invalid maintenance company name!\n");	
+            	}
+ 			} // end while
+            
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
@@ -771,19 +922,40 @@ public class DBProject {
     public static void numberOfRepairsForEachRoomPerYear(DBProject esql) {
         // Given a hotelID, roomNo, get the count of repairs per year
         try {
-            System.out.print("\tEnter Hotel ID: ");
-            String hotelid = in.readLine();
- 
-            System.out.print("\tEnter room number: ");
-            String roomno = in.readLine();
- 
-            String sql = String.format(
+
+        	int hotel = 0;
+        	int room = 0;
+
+        	while (hotel == 0 && room == 0) {
+        		System.out.print("\tEnter Hotel ID: ");
+	            String hotelid = in.readLine();
+	 
+	            System.out.print("\tEnter room number: ");
+	            String roomNo = in.readLine();
+
+	            String sql_res1= String.format("SELECT COUNT(*) FROM hotel WHERE hotelid = '%s", hotelid);
+            	hotel = esql.testQuery(sql_res1);
+
+            	String sql_res2= String.format("SELECT COUNT(*) FROM room WHERE hotelid = '%s' AND roomno = '%s'", hotelid, roomNo);
+            	room = esql.testQuery(sql_res2);
+
+            	if (hotel > 0 && room > 0) {
+            		 String sql = String.format(
                     "SELECT COUNT(DATE_PART('year', repairdate)) as number_of_repairs, DATE_PART('year', repairdate) as year "
                             + "FROM repair r WHERE r.hotelid = %s and r.roomno = %s GROUP BY DATE_PART('year', repairdate);",
-                    hotelid, roomno);
+                    hotelid, roomNo);
  
-            esql.executeQuery(sql);
- 
+           			esql.executeQuery(sql);
+            	}
+            	else if (hotel == 0) {
+					System.out.println("Invalid hotel id!\n");
+				}
+				else {
+					System.out.println("Invalid room number!\n");
+				}
+
+        	} // end while
+
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
